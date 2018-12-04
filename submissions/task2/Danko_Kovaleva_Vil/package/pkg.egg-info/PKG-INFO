@@ -1,0 +1,17 @@
+Metadata-Version: 2.1
+Name: pkg
+Version: 0.0.1
+Summary: hw2
+Home-page: UNKNOWN
+Author: Danko && Kovaleva
+Author-email: ariolwork@gmail.com
+License: UNKNOWN
+Description: nash_equilibrium - функция поиска стоимости игры а также спектров оптимальных стратегий
+        plot - функция строящая спектр оптимальных стратегий
+        format_answer - функция, приводящая вид ответа к дробям
+        print_answer - вывод ответа в дробях
+        
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: OS Independent
+Description-Content-Type: text/markdown
