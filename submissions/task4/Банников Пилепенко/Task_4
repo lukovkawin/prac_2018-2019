@@ -1,0 +1,81 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#начале склад пустой
+ 
+import pandas as pd
+import numpy as np
+ 
+import sys
+from os import listdir, makedirs
+from os.path import isfile, join, exists
+ 
+def apple(daily): 
+    return np.sum(daily == 'a')
+def pen(daily): 
+    return np.sum(daily == 'p')
+ 
+def export_stat(stats):
+    return pd.concat(stats).groupby(['year','state']).sum()
+ 
+def stores_story(sell, supply, inventory, sell_trans):
+ 
+    sell.sku_num = sell.sku_num.map(sell_trans)
+ 
+ 
+    sell_daily = sell.groupby('date')['sku_num'].agg([apple, pen])
+ 
+    changes_daily = supply.reindex_like(sell_daily).fillna(0) - sell_daily
+ 
+    # расширяем фрейм на каждый день 
+    monthly_sum_change = changes_daily.groupby(lambda date: date[:-2]).agg(np.cumsum)
+    # заполняя поле состоянием склада в последний день предыдущего месяца
+    ex_inventory = inventory.reindex_like(monthly_sum_change).shift(1).fillna(axis=0, method='ffill').fillna(0)
+ 
+    store_daily_st = ex_inventory + monthly_sum_change
+    stolen_month = store_daily_st.reindex_like(inventory) - inventory
+ 
+    return store_daily_st, stolen_month, sell_daily.groupby(lambda date: date[:-2]).sum()
+ 
+ 
+if __name__ == '__main__':
+    #входные файлы печесляются аргументами в коммандной строке (аргументов два: 1 input, 2 output файлы)
+    inp_dir = "in"
+    out_dir = "out"
+    statistics = []
+ 
+    sell_trans = lambda transaction: transaction[6]
+ 
+    all_files = [f for f in listdir(inp_dir) if isfile(join(inp_dir, f))]
+    stores = [f[:-8] for f in all_files if f[-8:] == "sell.csv"]
+ 
+    if not exists(out_dir):# если не существует выходного файла, создаём
+        makedirs(out_dir)
+ 
+    for store in stores:
+        print ("Processing...")
+        inventory = pd.read_csv(inp_dir + '/' + store + 'inventory.csv')
+        sold = pd.read_csv(inp_dir + '/' + store + 'sell.csv')
+        sold_const = pd.read_csv(inp_dir + '/' + store + 'sell.csv')
+        supply = pd.read_csv(inp_dir + '/' + store + 'supply.csv')
+ 
+        supply.set_index('date', inplace=True)
+        inventory.set_index('date', inplace=True)
+ 
+        state, stolen, sell = stores_story(sold, supply, inventory, sell_trans)
+ 
+ 
+        state.to_csv(out_dir + '/' + store + 'daily.csv')
+        stolen.to_csv(out_dir + '/' + store + 'steal.csv')
+ 
+        sell.index = stolen.index
+        stats = sell.join(stolen, lsuffix='_sold', rsuffix='_stolen').reset_index()
+ 
+        stats['state'] = sold_const.sku_num.map(lambda sku_num: sku_num[6:8])
+ 
+ 
+        stats['year'] = stats.date.map(lambda date: date[:4])
+        del stats['date']
+        statistics.append(stats)
+ 
+    export_stat(statistics).to_csv(out_dir + '/states.csv')
+    print("Finish!")
