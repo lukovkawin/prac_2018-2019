@@ -1,0 +1,87 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+
+pdata = pd.read_csv('production-data.csv', delimiter=',')
+pdata['new'] = pdata['report.date'] - pdata['production.date']
+gb = pdata.groupby(['supplier', 'new'])['defects']
+gb = gb.mean()
+harp_co = np.array(gb['harpy.co'][1:])
+west_inc = np.array(gb['westeros.inc'][1:])
+
+d = (np.array([np.array(gb['harpy.co'][1:]), np.array(gb['westeros.inc'][1:])])).transpose()
+df = pd.DataFrame(data=d)
+
+df.columns = ['harpy.co', 'westeros.inc']
+ax = df.plot(kind='barh', stacked=False)
+
+ax.set_yticklabels(['1 month', '2 month', '3 month', '4 month', '5 month', '6 month'])
+ax.set_xlim([0, 20])#пределы для оси x
+plt.title('Average number of defects per month')
+plt.show()
+
+#После строиться график box
+d = {'harpy.co': harp_co, 'westeros.inc': west_inc}
+df = pd.DataFrame(data=d)
+
+plt.title('Average number of defects per month')
+sns.boxplot(data=df)
+
+plt.show()
+
+sum_def_harp = np.zeros(6)
+sum_def_west = np.zeros(6)
+test_harp = np.zeros(6)
+test_west = np.zeros(6)
+
+pdata = pd.read_csv('production-data.csv', delimiter=',', header=None)
+pdata = np.array(pdata[1:])
+n, m = np.shape(pdata)
+
+for i in range(n):
+    t_1 = float(pdata[i, 3]) - float(pdata[i, 4]) #produce - deffects
+    t_2 = t_1 * (8 - float(pdata[i, 2]))#float(pdata[i, 3]) * (8 - float(pdata[i, 2])) 
+    #- float(pdata[i, 4]) * (8 - float(pdata[i, 2])) #how longe was working blade
+    if pdata[i, 5] == 'harpy.co':#fill if harpy.co
+        j = int(pdata[i,1]) - 1
+        test_harp[j] += t_1
+        sum_def_harp[j] += t_2
+    if pdata[i, 5] == 'westeros.inc':#fill if westeros.inc
+        j = int(pdata[i,1]) - 1
+        test_west[j] += t_1
+        sum_def_west[j] += t_2
+
+d = (np.array([sum_def_harp, sum_def_west])).transpose()
+df = pd.DataFrame(data=d)
+df.columns = ['harpy.co', 'westeros.inc']
+
+ax = df.plot(kind='barh', stacked=False)
+ax.set_yticklabels(['1 month', '2 month', '3 month', '4 month', '5 month', '6 month'])
+ax.set_xlim([0, 40000])#пределы для оси x
+plt.title('Aggregate service life')
+plt.show()
+
+#После строиться график box
+plt.title('Aggregate service life')
+d = { 'harpy.co': sum_def_harp, 'westeros.inc': sum_def_west}
+df = pd.DataFrame(data=d)
+sns.boxplot(data=df)
+plt.show()
+
+
+d = (np.array([test_harp, test_west])).transpose()
+df = pd.DataFrame(data=d)
+df.columns = ['harpy.co', 'westeros.inc']
+ax=df.plot(kind='barh', stacked=False)
+ax.set_yticklabels(['1 month', '2 month', '3 month', '4 month', '5 month', '6 month'])
+ax.set_xlim([0,6000])#пределы для оси x
+plt.title('Summary number of swords without defects')
+plt.show()
+
+#После строиться график box
+plt.title('Summary number of swords without defects')
+d = {'harpy.co': test_harp, 'westeros.inc': test_west}
+df = pd.DataFrame(data=d)
+sns.boxplot(data=df)
+plt.show()
